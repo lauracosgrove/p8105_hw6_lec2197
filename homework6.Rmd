@@ -98,4 +98,122 @@ glm_homicide_data %>%
 
 Create a plot that shows the estimated ORs and CIs for each city. Organize cities according to estimated OR, and comment on the plot.
 
+## Problem 2
+
+In this probelm, you will analyze data gathered to understand the effects of several variables on a child’s birthweight. This dataset, available here, consists of roughly 4000 children and includes the following variables:
+
+babysex: baby’s sex (male = 1, female = 2)
+bhead: baby’s head circumference at birth (centimeters) ** exclude?
+blength: baby’s length at birth (centimeteres) ** exclude?
+bwt: baby’s birth weight (grams) **outcome
+delwt: mother’s weight at delivery (pounds) 
+fincome: family monthly income (in hundreds, rounded) **
+frace: father’s race (1= White, 2 = Black, 3 = Asian, 4 = Puerto Rican, 8 = Other, 9 = Unknown) **
+gaweeks: gestational age in weeks **
+malform: presence of malformations that could affect weight (0 = absent, 1 = present) **
+menarche: mother’s age at menarche (years) 
+mheigth: mother’s height (inches) 
+momage: mother’s age at delivery (years) **
+mrace: mother’s race (1= White, 2 = Black, 3 = Asian, 4 = Puerto Rican, 8 = Other)
+parity: number of live births prior to this pregnancy **
+pnumlbw: previous number of low birth weight babies **
+pnumgsa: number of prior small for gestational age babies **
+ppbmi: mother’s pre-pregnancy BMI **
+ppwt: mother’s pre-pregnancy weight (pounds)
+smoken: average number of cigarettes smoked per day during pregnancy **
+wtgain: mother’s weight gain during pregnancy (pounds) **
+
+Load and clean the data for regression analysis (i.e. convert numeric to factor where appropriate, check for missing data, etc.).
+
+Propose a regression model for birthweight. This model may be based on a hypothesized structure for the factors that underly birthweight, on a data-driven model-building process, or a combination of the two. Describe your modeling process and show a plot of model residuals against fitted values – use add_predictions and add_residuals in making this plot.
+
+Compare your model to two others:
+
+One using length at birth and gestational age as predictors (main effects only)
+One using head circumference, length, sex, and all interactions (including the three-way interaction) between these
+Make this comparison in terms of the cross-validated prediction error; use crossv_mc and functions in purrr as appropriate.
+
+Note that although we expect your model to be reasonable, model building itself is not a main idea of the course and we don’t necessarily expect your model to be “optimal”.
+
+```{r}
+birthweight_data <- read_csv("./data/birthweight.csv") %>% 
+  mutate(babysex = factor(babysex, labels = c("male", "female")),
+         frace = factor(frace, levels = c(1, 2, 3, 4, 8), labels = c("White", "Black", "Asian", "Puerto Rican", "Other")),
+         mrace = factor(mrace, levels = c(1, 2, 3, 4), labels = c("White", "Black", "Asian", "Puerto Rican")),
+         malform = factor(malform, labels = c("absent", "present"))
+         )
+```
+
+My model-building approach will be step-wise backward elimination: the maximum number of variables will be included at the outset, and the least significant variables will be iteratively eliminated. Since the goal is exploratory, to understand the effects of several variables on birthweight, I chose a method that will allow for a generous/inclusive set of variables.
+
+My first step will be to examine the variables list to detect those which cannot be expected to be independent (e.g. pre-pregnancy BMI and pre-pregnancy weight) and nominate one (or more) of them for exclusion to ensure variables which are clearly not independent are not included together in a model. To check this, I will create a correlation matrix of all variables to note if there are other interactions I missed:
+
+```{r}
+birthweight_data %>% 
+  select(bwt, everything(), -babysex, -frace, -mrace, -malform, -pnumlbw, -pnumsga) %>% #pnumlbw and pnumsga dropped because of a high number of missing values, correlations not computed
+  cor() %>% 
+  knitr::kable(digits = 2)
+```
+
+
+For continuous variables, there is high predictor correlation between:
+* bhead and blength;
+* ppwt and delwt and ppbmi
+
+Of the first, I'll keep `bhead` (baby's head circumfrence) because of its higher correlation with the outcome, baby weight. Of the second, I'll keep `delwt` because of its comparative higher correlation with baby weight as well.
+
+For categorical variables, there is likely an interaction between `frace` and `mrace`. I'll exclude the father's race from the model because it seems less relevant.
+
+Next, I'll plot the distribution of the outcome to check for a reasonable normality assumption,.
+
+```{r}
+birthweight_data %>% 
+  ggplot(aes(x = bwt)) + 
+  geom_histogram()
+```
+
+The outcome is not perfectly normal, but it's close enough to be sufficient.
+
+I'll start by including all variables in the model aside from the above-decided exclusions:
+
+```{r}
+birthweight_data %>% 
+  lm(bwt ~ bhead + delwt + fincome + gaweeks + malform + menarche + mheight + momage + mrace + parity + pnumlbw + pnumsga + smoken + wtgain, data = .) %>% 
+  tidy() %>% 
+  arrange(p.value)
+```
+
+`momage` is first to remove.
+
+```{r}
+birthweight_data %>% 
+  lm(bwt ~ bhead + delwt + fincome + gaweeks + malform + menarche + mheight + mrace + parity + smoken + wtgain, data = .) %>% 
+  tidy() %>% 
+  arrange(p.value)
+```
+
+`fincome` is also insignificant.
+
+```{r}
+birthweight_data %>% 
+  lm(bwt ~ bhead + delwt + gaweeks + malform + menarche + mheight + mrace + parity + smoken + wtgain, data = .) %>% 
+  tidy() %>% 
+  arrange(p.value)
+```
+  
+Dropping `malform` as the presence is insignificant. This is surprising!
+
+```{r}
+birthweight_data %>% 
+  lm(bwt ~ bhead + delwt + gaweeks + menarche + mheight + mrace + parity + smoken + wtgain, data = .) %>% 
+  tidy() %>% 
+  arrange(p.value)
+```
+
+Compared to mother's race being white, the mother's race being asian has an insignificant effect on birthweight. This is a possible candidate for grouping white and asian mothers together, but since the mother's race being black has a very significant effect on the birthweight, I will keep mrace in the model.
+
+The effects `menarche` and `parity` are above the 5% significant level, but since the model is for exploratory and descriptive purposes, I will examine the model diagnostics before eliminating them.
+
+
+
 
