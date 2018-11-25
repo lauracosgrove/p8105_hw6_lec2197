@@ -29,25 +29,23 @@ homicide_data <-
           victim_race == "Unknown" ~ "NA"), 
         levels = c("white", "non-white", "NA")
          ))
+## Parsed with column specification:
+## cols(
+##   uid = col_character(),
+##   reported_date = col_integer(),
+##   victim_last = col_character(),
+##   victim_first = col_character(),
+##   victim_race = col_character(),
+##   victim_age = col_character(),
+##   victim_sex = col_character(),
+##   city = col_character(),
+##   state = col_character(),
+##   lat = col_double(),
+##   lon = col_double(),
+##   disposition = col_character()
+## )
+## Warning: NAs introduced by coercion
 ```
-
-    ## Parsed with column specification:
-    ## cols(
-    ##   uid = col_character(),
-    ##   reported_date = col_integer(),
-    ##   victim_last = col_character(),
-    ##   victim_first = col_character(),
-    ##   victim_race = col_character(),
-    ##   victim_age = col_character(),
-    ##   victim_sex = col_character(),
-    ##   city = col_character(),
-    ##   state = col_character(),
-    ##   lat = col_double(),
-    ##   lon = col_double(),
-    ##   disposition = col_character()
-    ## )
-
-    ## Warning: NAs introduced by coercion
 
 I'll look more closely into Baltimore
 
@@ -105,7 +103,7 @@ glm_homicide_data %>%
        caption = "Data from Washington Post. Victim sex and age held constant.")
 ```
 
-![](homework6_files/figure-markdown_github/unnamed-chunk-3-1.png)
+<img src="homework6_files/figure-markdown_github/unnamed-chunk-3-1.png" width="90%" />
 
 Create a plot that shows the estimated ORs and CIs for each city. Organize cities according to estimated OR, and comment on the plot.
 
@@ -127,17 +125,15 @@ birthweight_data <- read_csv("./data/birthweight.csv") %>%
          mrace = factor(mrace, levels = c(1, 2, 3, 4), labels = c("White", "Black", "Asian", "Puerto Rican")),
          malform = factor(malform, labels = c("absent", "present"))
          )
+## Parsed with column specification:
+## cols(
+##   .default = col_integer(),
+##   gaweeks = col_double(),
+##   ppbmi = col_double(),
+##   smoken = col_double()
+## )
+## See spec(...) for full column specifications.
 ```
-
-    ## Parsed with column specification:
-    ## cols(
-    ##   .default = col_integer(),
-    ##   gaweeks = col_double(),
-    ##   ppbmi = col_double(),
-    ##   smoken = col_double()
-    ## )
-
-    ## See spec(...) for full column specifications.
 
 My model-building approach will be step-wise backward elimination: the maximum number of variables will be included at the outset, and the least significant variables will be iteratively eliminated. Since the goal is exploratory, to understand the effects of several variables on birthweight, I chose a method that will allow for a generous/inclusive set of variables.
 
@@ -180,11 +176,10 @@ birthweight_data %>%
   ggplot(aes(x = bwt)) + 
   geom_histogram() + 
   labs( x = "Weight at Birth (grams)")
+## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
 ```
 
-    ## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
-
-![](homework6_files/figure-markdown_github/unnamed-chunk-6-1.png)
+<img src="homework6_files/figure-markdown_github/unnamed-chunk-6-1.png" width="90%" />
 
 The outcome is not perfectly normal, but it's close enough to be sufficient.
 
@@ -195,26 +190,25 @@ birthweight_data %>%
   lm(bwt ~ bhead + delwt + fincome + gaweeks + malform + menarche + mheight + momage + mrace + parity + pnumlbw + pnumsga + smoken + wtgain, data = .) %>% 
   tidy() %>% 
   arrange(p.value)
+## # A tibble: 15 x 5
+##    term                estimate std.error statistic   p.value
+##    <chr>                  <dbl>     <dbl>     <dbl>     <dbl>
+##  1 bhead               197.         3.30    59.5    0.       
+##  2 (Intercept)       -5243.       158.     -33.1    1.30e-214
+##  3 mraceBlack         -174.        11.7    -14.9    8.93e- 49
+##  4 gaweeks              20.3        1.65    12.3    3.38e- 34
+##  5 smoken               -6.75       0.670  -10.1    1.30e- 23
+##  6 wtgain                3.55       0.496    7.15   9.90e- 13
+##  7 delwt                 1.90       0.270    7.01   2.67e- 12
+##  8 mheight              12.1        2.06     5.86   4.94e-  9
+##  9 mracePuerto Rican  -124.        22.2     -5.56   2.80e-  8
+## 10 menarche             -5.82       3.32    -1.75   7.96e-  2
+## 11 parity               79.1       46.4      1.70   8.87e-  2
+## 12 mraceAsian          -79.5       49.1     -1.62   1.05e-  1
+## 13 malformpresent      -34.6       81.1     -0.427  6.69e-  1
+## 14 fincome               0.0326     0.206    0.158  8.74e-  1
+## 15 momage                0.0734     1.40     0.0524 9.58e-  1
 ```
-
-    ## # A tibble: 15 x 5
-    ##    term                estimate std.error statistic   p.value
-    ##    <chr>                  <dbl>     <dbl>     <dbl>     <dbl>
-    ##  1 bhead               197.         3.30    59.5    0.       
-    ##  2 (Intercept)       -5243.       158.     -33.1    1.30e-214
-    ##  3 mraceBlack         -174.        11.7    -14.9    8.93e- 49
-    ##  4 gaweeks              20.3        1.65    12.3    3.38e- 34
-    ##  5 smoken               -6.75       0.670  -10.1    1.30e- 23
-    ##  6 wtgain                3.55       0.496    7.15   9.90e- 13
-    ##  7 delwt                 1.90       0.270    7.01   2.67e- 12
-    ##  8 mheight              12.1        2.06     5.86   4.94e-  9
-    ##  9 mracePuerto Rican  -124.        22.2     -5.56   2.80e-  8
-    ## 10 menarche             -5.82       3.32    -1.75   7.96e-  2
-    ## 11 parity               79.1       46.4      1.70   8.87e-  2
-    ## 12 mraceAsian          -79.5       49.1     -1.62   1.05e-  1
-    ## 13 malformpresent      -34.6       81.1     -0.427  6.69e-  1
-    ## 14 fincome               0.0326     0.206    0.158  8.74e-  1
-    ## 15 momage                0.0734     1.40     0.0524 9.58e-  1
 
 `momage` is first to remove.
 
@@ -223,25 +217,24 @@ birthweight_data %>%
   lm(bwt ~ bhead + delwt + fincome + gaweeks + malform + menarche + mheight + mrace + parity + smoken + wtgain, data = .) %>% 
   tidy() %>% 
   arrange(p.value)
+## # A tibble: 14 x 5
+##    term                estimate std.error statistic   p.value
+##    <chr>                  <dbl>     <dbl>     <dbl>     <dbl>
+##  1 bhead               197.         3.30     59.5   0.       
+##  2 (Intercept)       -5243.       158.      -33.2   7.66e-216
+##  3 mraceBlack         -174.        11.3     -15.3   1.11e- 51
+##  4 gaweeks              20.3        1.65     12.3   2.65e- 34
+##  5 smoken               -6.75       0.670   -10.1   1.28e- 23
+##  6 wtgain                3.55       0.490     7.23  5.54e- 13
+##  7 delwt                 1.90       0.268     7.09  1.54e- 12
+##  8 mheight              12.1        2.06      5.86  4.93e-  9
+##  9 mracePuerto Rican  -124.        22.2      -5.58  2.59e-  8
+## 10 menarche             -5.79       3.26     -1.78  7.58e-  2
+## 11 parity               79.3       46.3       1.71  8.71e-  2
+## 12 mraceAsian          -79.2       48.7      -1.63  1.04e-  1
+## 13 malformpresent      -34.5       81.0      -0.426 6.70e-  1
+## 14 fincome               0.0349     0.201     0.174 8.62e-  1
 ```
-
-    ## # A tibble: 14 x 5
-    ##    term                estimate std.error statistic   p.value
-    ##    <chr>                  <dbl>     <dbl>     <dbl>     <dbl>
-    ##  1 bhead               197.         3.30     59.5   0.       
-    ##  2 (Intercept)       -5243.       158.      -33.2   7.66e-216
-    ##  3 mraceBlack         -174.        11.3     -15.3   1.11e- 51
-    ##  4 gaweeks              20.3        1.65     12.3   2.65e- 34
-    ##  5 smoken               -6.75       0.670   -10.1   1.28e- 23
-    ##  6 wtgain                3.55       0.490     7.23  5.54e- 13
-    ##  7 delwt                 1.90       0.268     7.09  1.54e- 12
-    ##  8 mheight              12.1        2.06      5.86  4.93e-  9
-    ##  9 mracePuerto Rican  -124.        22.2      -5.58  2.59e-  8
-    ## 10 menarche             -5.79       3.26     -1.78  7.58e-  2
-    ## 11 parity               79.3       46.3       1.71  8.71e-  2
-    ## 12 mraceAsian          -79.2       48.7      -1.63  1.04e-  1
-    ## 13 malformpresent      -34.5       81.0      -0.426 6.70e-  1
-    ## 14 fincome               0.0349     0.201     0.174 8.62e-  1
 
 `fincome` is also insignificant.
 
@@ -250,24 +243,23 @@ birthweight_data %>%
   lm(bwt ~ bhead + delwt + gaweeks + malform + menarche + mheight + mrace + parity + smoken + wtgain, data = .) %>% 
   tidy() %>% 
   arrange(p.value)
+## # A tibble: 13 x 5
+##    term              estimate std.error statistic   p.value
+##    <chr>                <dbl>     <dbl>     <dbl>     <dbl>
+##  1 bhead               197.       3.30     59.6   0.       
+##  2 (Intercept)       -5243.     158.      -33.2   5.62e-216
+##  3 mraceBlack         -174.      10.6     -16.5   1.68e- 59
+##  4 gaweeks              20.4      1.65     12.3   2.36e- 34
+##  5 smoken               -6.75     0.669   -10.1   1.18e- 23
+##  6 wtgain                3.54     0.490     7.23  5.58e- 13
+##  7 delwt                 1.90     0.268     7.09  1.53e- 12
+##  8 mheight              12.1      2.05      5.89  4.05e-  9
+##  9 mracePuerto Rican  -124.      21.9      -5.67  1.54e-  8
+## 10 menarche             -5.80     3.26     -1.78  7.54e-  2
+## 11 parity               79.1     46.3       1.71  8.76e-  2
+## 12 mraceAsian          -79.5     48.7      -1.63  1.02e-  1
+## 13 malformpresent      -34.8     81.0      -0.429 6.68e-  1
 ```
-
-    ## # A tibble: 13 x 5
-    ##    term              estimate std.error statistic   p.value
-    ##    <chr>                <dbl>     <dbl>     <dbl>     <dbl>
-    ##  1 bhead               197.       3.30     59.6   0.       
-    ##  2 (Intercept)       -5243.     158.      -33.2   5.62e-216
-    ##  3 mraceBlack         -174.      10.6     -16.5   1.68e- 59
-    ##  4 gaweeks              20.4      1.65     12.3   2.36e- 34
-    ##  5 smoken               -6.75     0.669   -10.1   1.18e- 23
-    ##  6 wtgain                3.54     0.490     7.23  5.58e- 13
-    ##  7 delwt                 1.90     0.268     7.09  1.53e- 12
-    ##  8 mheight              12.1      2.05      5.89  4.05e-  9
-    ##  9 mracePuerto Rican  -124.      21.9      -5.67  1.54e-  8
-    ## 10 menarche             -5.80     3.26     -1.78  7.54e-  2
-    ## 11 parity               79.1     46.3       1.71  8.76e-  2
-    ## 12 mraceAsian          -79.5     48.7      -1.63  1.02e-  1
-    ## 13 malformpresent      -34.8     81.0      -0.429 6.68e-  1
 
 Dropping `malform` as the presence is insignificant. This is surprising!
 
@@ -276,23 +268,22 @@ birthweight_data %>%
   lm(bwt ~ bhead + delwt + gaweeks + menarche + mheight + mrace + parity + smoken + wtgain, data = .) %>% 
   tidy() %>% 
   arrange(p.value)
+## # A tibble: 12 x 5
+##    term              estimate std.error statistic   p.value
+##    <chr>                <dbl>     <dbl>     <dbl>     <dbl>
+##  1 bhead               197.       3.30      59.6  0.       
+##  2 (Intercept)       -5244.     158.       -33.3  3.59e-216
+##  3 mraceBlack         -174.      10.6      -16.5  1.78e- 59
+##  4 gaweeks              20.4      1.65      12.3  2.14e- 34
+##  5 smoken               -6.76     0.669    -10.1  1.00e- 23
+##  6 wtgain                3.54     0.490      7.22 5.92e- 13
+##  7 delwt                 1.90     0.268      7.09 1.54e- 12
+##  8 mheight              12.1      2.05       5.90 3.87e-  9
+##  9 mracePuerto Rican  -124.      21.9       -5.66 1.60e-  8
+## 10 menarche             -5.79     3.26      -1.78 7.58e-  2
+## 11 parity               79.1     46.3        1.71 8.74e-  2
+## 12 mraceAsian          -79.4     48.7       -1.63 1.03e-  1
 ```
-
-    ## # A tibble: 12 x 5
-    ##    term              estimate std.error statistic   p.value
-    ##    <chr>                <dbl>     <dbl>     <dbl>     <dbl>
-    ##  1 bhead               197.       3.30      59.6  0.       
-    ##  2 (Intercept)       -5244.     158.       -33.3  3.59e-216
-    ##  3 mraceBlack         -174.      10.6      -16.5  1.78e- 59
-    ##  4 gaweeks              20.4      1.65      12.3  2.14e- 34
-    ##  5 smoken               -6.76     0.669    -10.1  1.00e- 23
-    ##  6 wtgain                3.54     0.490      7.22 5.92e- 13
-    ##  7 delwt                 1.90     0.268      7.09 1.54e- 12
-    ##  8 mheight              12.1      2.05       5.90 3.87e-  9
-    ##  9 mracePuerto Rican  -124.      21.9       -5.66 1.60e-  8
-    ## 10 menarche             -5.79     3.26      -1.78 7.58e-  2
-    ## 11 parity               79.1     46.3        1.71 8.74e-  2
-    ## 12 mraceAsian          -79.4     48.7       -1.63 1.03e-  1
 
 Compared to the reference category of the mother's race being white, the mother's race being asian has an insignificant effect on birthweight. This is a possible candidate for grouping white and asian mothers together, but since the mother's race being black has a very significant effect on the birthweight, I will keep mrace in the model.
 
@@ -310,11 +301,10 @@ birthweight_data %>%
   labs(title = "Predicted values vs. residuals plot for combination model", 
        x = "Predicted value", 
        y = "Residual")
+## `geom_smooth()` using method = 'gam' and formula 'y ~ s(x, bs = "cs")'
 ```
 
-    ## `geom_smooth()` using method = 'gam' and formula 'y ~ s(x, bs = "cs")'
-
-![](homework6_files/figure-markdown_github/unnamed-chunk-11-1.png)
+<img src="homework6_files/figure-markdown_github/unnamed-chunk-11-1.png" width="90%" />
 
 The model poorly predicts outcomes at low birthweights, under 2000 grams. Influential points seem to be present, particularly at lower birthweights. However, in the most common range for birthweights, the residuals appear to be evenly spread around zero, indicating np violation of error assumptions in those ranges.
 
@@ -339,15 +329,9 @@ cv_bweight <- cv_bweight %>%
   mutate(rmse_my = map2_dbl(my_mod, test, ~rmse(model = .x, data = .y)),
          rmse_twopred = map2_dbl(twopred_mod, test, ~rmse(model = .x, data = .y)),
          rmse_threeint = map2_dbl(threeint_mod, test, ~rmse(model = .x, data = .y)))
-```
+## Warning in predict.lm(model, data): prediction from a rank-deficient fit
+## may be misleading
 
-    ## Warning in predict.lm(model, data): prediction from a rank-deficient fit
-    ## may be misleading
-
-    ## Warning in predict.lm(model, data): prediction from a rank-deficient fit
-    ## may be misleading
-
-``` r
 cv_bweight %>% 
   select(starts_with("rmse")) %>% 
   gather(key = model, value = rmse) %>% 
@@ -360,6 +344,6 @@ cv_bweight %>%
        y = "RMSE")
 ```
 
-![](homework6_files/figure-markdown_github/unnamed-chunk-12-1.png)
+<img src="homework6_files/figure-markdown_github/unnamed-chunk-12-1.png" width="90%" />
 
 The model with three interactions has a lower RMSE. If the goal is to make predictions, I would choose the model that is based on the interactions between the baby's sex, head circumfrence, and length to predict birthweight. However, if the goal is to explore other, non-obvious factors of birthweight, such as mother's race, weight gain during pregnancy, history of smoking, and other factors that might be relevant from clinical guidance and equity of care standpoints, I would work to further optimize my model, perhaps including more interaction factors.

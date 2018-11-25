@@ -6,7 +6,12 @@ output: github_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  fig.width = 6,
+  fig.asp = .6,
+  out.width = "90%"
+)
 
 library(tidyverse)
 library(modelr)     
@@ -65,7 +70,7 @@ broom::tidy(glm_baltimore, conf.int = TRUE, exponentiate = TRUE) %>%
 
 Now run glm for each of the cities in your dataset, and extract the adjusted odds ratio (and CI) for solving homicides comparing non-white victims to white victims. Do this within a “tidy” pipeline, making use of purrr::map, list columns, and unnest as necessary to create a dataframe with estimated ORs and CIs for each city.
 
-```{r}
+```{r, fig.height=10, fig.asp = 1.2}
 glm_homicides = function(df) {
   glm(resolution ~ victim_age + victim_race + victim_sex, family = "binomial", data = df)
 }
