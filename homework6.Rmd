@@ -127,14 +127,6 @@ Load and clean the data for regression analysis (i.e. convert numeric to factor 
 
 Propose a regression model for birthweight. This model may be based on a hypothesized structure for the factors that underly birthweight, on a data-driven model-building process, or a combination of the two. Describe your modeling process and show a plot of model residuals against fitted values – use add_predictions and add_residuals in making this plot.
 
-Compare your model to two others:
-
-One using length at birth and gestational age as predictors (main effects only)
-One using head circumference, length, sex, and all interactions (including the three-way interaction) between these
-Make this comparison in terms of the cross-validated prediction error; use crossv_mc and functions in purrr as appropriate.
-
-Note that although we expect your model to be reasonable, model building itself is not a main idea of the course and we don’t necessarily expect your model to be “optimal”.
-
 ```{r}
 birthweight_data <- read_csv("./data/birthweight.csv") %>% 
   mutate(babysex = factor(babysex, labels = c("male", "female")),
@@ -156,20 +148,21 @@ birthweight_data %>%
 ```
 
 
-For continuous variables, there is high predictor correlation between:
+For continuous variables, there is high predictor correlation, providing evidence of multicollinearity, between:
 * bhead and blength;
 * ppwt and delwt and ppbmi
 
 Of the first, I'll keep `bhead` (baby's head circumfrence) because of its higher correlation with the outcome, baby weight. Of the second, I'll keep `delwt` because of its comparative higher correlation with baby weight as well.
 
-For categorical variables, there is likely an interaction between `frace` and `mrace`. I'll exclude the father's race from the model because it seems less relevant.
+For categorical variables, there is likely an interaction between `frace` and `mrace`. I'll exclude the father's race from the model because it seems less relevant, and note to explore at a later date.
 
-Next, I'll plot the distribution of the outcome to check for a reasonable normality assumption,.
+Next, I'll plot the distribution of the outcome to check for a reasonable normality assumption.
 
 ```{r}
 birthweight_data %>% 
   ggplot(aes(x = bwt)) + 
-  geom_histogram()
+  geom_histogram() + 
+  labs( x = "Weight at Birth (grams)")
 ```
 
 The outcome is not perfectly normal, but it's close enough to be sufficient.
@@ -208,12 +201,68 @@ birthweight_data %>%
   lm(bwt ~ bhead + delwt + gaweeks + menarche + mheight + mrace + parity + smoken + wtgain, data = .) %>% 
   tidy() %>% 
   arrange(p.value)
+
+
 ```
 
-Compared to mother's race being white, the mother's race being asian has an insignificant effect on birthweight. This is a possible candidate for grouping white and asian mothers together, but since the mother's race being black has a very significant effect on the birthweight, I will keep mrace in the model.
+Compared to the reference category of the mother's race being white, the mother's race being asian has an insignificant effect on birthweight. This is a possible candidate for grouping white and asian mothers together, but since the mother's race being black has a very significant effect on the birthweight, I will keep mrace in the model.
 
-The effects `menarche` and `parity` are above the 5% significant level, but since the model is for exploratory and descriptive purposes, I will examine the model diagnostics before eliminating them.
+The effects `menarche` and `parity` are above the 5% significance level, but since the model is for exploratory and descriptive purposes, I will examine the model diagnostics before eliminating them.
 
 
+```{r}
+generous_model <-  lm(bwt ~ bhead + delwt + gaweeks + menarche + mheight + mrace + parity + smoken + wtgain, data = birthweight_data)
 
+birthweight_data %>% 
+  add_predictions(generous_model) %>% 
+  add_residuals(generous_model) %>% 
+  ggplot(aes(x = pred, y = resid)) + 
+  geom_point() + 
+  geom_smooth(se = FALSE) + 
+  labs(title = "Predicted values vs. residuals plot for combination model", 
+       x = "Predicted value", 
+       y = "Residual")
+```
+
+The model poorly predicts outcomes at low birthweights, under 2000 grams. Influential points seem to be present, particularly at lower birthweights. However, in the most common range for birthweights, the residuals appear to be evenly spread around zero, indicating np violation of error assumptions in those ranges.
+
+### Comparing model
+
+Compare your model to two others:
+
+One using length at birth and gestational age as predictors (main effects only)
+One using head circumference, length, sex, and all interactions (including the three-way interaction) between these
+Make this comparison in terms of the cross-validated prediction error; use crossv_mc and functions in purrr as appropriate.
+
+Note that although we expect your model to be reasonable, model building itself is not a main idea of the course and we don’t necessarily expect your model to be “optimal”.
+
+```{r}
+twopred_mod <- lm(bwt ~ blength + gaweeks, data = birthweight_data)
+threeint_mod <- lm(bwt ~ bhead + blength + babysex + bhead:blength + babysex:blength + babysex:bhead, data = birthweight_data)
+
+cv_bweight <- crossv_mc(birthweight_data, 100)
+
+cv_bweight <- cv_bweight %>% 
+  mutate(my_mod = map(train, ~lm(bwt ~ bhead + delwt + gaweeks + menarche + mheight + mrace + parity + smoken + wtgain, data = .x)), 
+         twopred_mod = map(train, ~lm(bwt ~ blength + gaweeks, data = .x)), 
+         threeint_mod = map(train, ~lm(bwt ~ bhead + blength + babysex + bhead:blength + babysex:blength + babysex:bhead, data = .x))) %>% 
+  mutate(rmse_my = map2_dbl(my_mod, test, ~rmse(model = .x, data = .y)),
+         rmse_twopred = map2_dbl(twopred_mod, test, ~rmse(model = .x, data = .y)),
+         rmse_threeint = map2_dbl(threeint_mod, test, ~rmse(model = .x, data = .y)))
+
+cv_bweight %>% 
+  select(starts_with("rmse")) %>% 
+  gather(key = model, value = rmse) %>% 
+  mutate(model = str_replace(model, "rmse_", ""),
+         model = fct_inorder(model)) %>% 
+  ggplot(aes(x = model, y = rmse)) + 
+  geom_violin() + 
+  labs(title = "Violin plots of RMSE", 
+       x = "Model", 
+       y = "RMSE")
+
+
+```
+
+The model with three interactions has a lower RMSE. If the goal is to make predictions, I would choose the model that is based on the interactions between the baby's sex, head circumfrence, and length to predict birthweight. However, if the goal is to explore other, non-obvious factors of birthweight, such as mother's race, weight gain during pregnancy, history of smoking, and other factors that might be relevant from clinical guidance and equity of care standpoints, I would work to further optimize my model, perhaps including more interaction factors. 
 
