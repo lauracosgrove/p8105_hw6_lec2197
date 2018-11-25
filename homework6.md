@@ -287,26 +287,61 @@ birthweight_data %>%
 
 Compared to the reference category of the mother's race being white, the mother's race being asian has an insignificant effect on birthweight. This is a possible candidate for grouping white and asian mothers together, but since the mother's race being black has a very significant effect on the birthweight, I will keep mrace in the model.
 
-The effects `menarche` and `parity` are above the 5% significance level, but since the model is for exploratory and descriptive purposes, I will examine the model diagnostics before eliminating them.
+The effects `menarche` and `parity` are above the 5% significance level. Since the model is for exploratory and descriptive purposes, I will run a partial F-test to see will examine the model diagnostics before eliminating them.
 
 ``` r
-generous_model <-  lm(bwt ~ bhead + delwt + gaweeks + menarche + mheight + mrace + parity + smoken + wtgain, data = birthweight_data)
-
 birthweight_data %>% 
-  add_predictions(generous_model) %>% 
-  add_residuals(generous_model) %>% 
+  lm(bwt ~ bhead + delwt + gaweeks + mheight + mrace + smoken + wtgain, data = .) %>% 
+  tidy() %>% 
+  arrange(p.value)
+## # A tibble: 10 x 5
+##    term              estimate std.error statistic   p.value
+##    <chr>                <dbl>     <dbl>     <dbl>     <dbl>
+##  1 bhead               197.       3.30      59.5  0.       
+##  2 (Intercept)       -5284.     155.       -34.0  2.68e-225
+##  3 mraceBlack         -175.      10.6      -16.5  1.24e- 59
+##  4 gaweeks              20.1      1.65      12.2  7.95e- 34
+##  5 smoken               -6.79     0.669    -10.1  6.60e- 24
+##  6 delwt                 1.95     0.266      7.34 2.62e- 13
+##  7 wtgain                3.55     0.490      7.25 5.00e- 13
+##  8 mracePuerto Rican  -125.      21.9       -5.73 1.10e-  8
+##  9 mheight              11.6      2.04       5.71 1.22e-  8
+## 10 mraceAsian          -85.7     48.6       -1.76 7.76e-  2
+
+generous_model <-  lm(bwt ~ bhead + delwt + gaweeks + menarche + mheight + mrace + parity + smoken + wtgain, data = birthweight_data)
+lessgen_model <-  lm(bwt ~ bhead + delwt + gaweeks + mheight + mrace + smoken + parity + wtgain, data = birthweight_data)
+anova(lessgen_model, generous_model)
+## Analysis of Variance Table
+## 
+## Model 1: bwt ~ bhead + delwt + gaweeks + mheight + mrace + smoken + parity + 
+##     wtgain
+## Model 2: bwt ~ bhead + delwt + gaweeks + menarche + mheight + mrace + 
+##     parity + smoken + wtgain
+##   Res.Df       RSS Df Sum of Sq     F  Pr(>F)  
+## 1   4331 423688712                             
+## 2   4330 423380317  1    308395 3.154 0.07581 .
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+```
+
+We failed to reject the null hypothesis that the less generous model, without `menarche` and `parity` is preferred, so I'll proceed with that model.
+
+``` r
+birthweight_data %>% 
+  add_predictions(lessgen_model) %>% 
+  add_residuals(lessgen_model) %>% 
   ggplot(aes(x = pred, y = resid)) + 
   geom_point() + 
   geom_smooth(se = FALSE) + 
-  labs(title = "Predicted values vs. residuals plot for combination model", 
+  labs(title = "Predicted values vs. residuals plot for chosen model", 
        x = "Predicted value", 
        y = "Residual")
 ## `geom_smooth()` using method = 'gam' and formula 'y ~ s(x, bs = "cs")'
 ```
 
-<img src="homework6_files/figure-markdown_github/unnamed-chunk-11-1.png" width="90%" />
+<img src="homework6_files/figure-markdown_github/unnamed-chunk-12-1.png" width="90%" />
 
-The model poorly predicts outcomes at low birthweights, under 2000 grams. Influential points seem to be present, particularly at lower birthweights. However, in the most common range for birthweights, the residuals appear to be evenly spread around zero, indicating np violation of error assumptions in those ranges.
+The model poorly predicts outcomes at low birthweights, under 2000 grams. Influential points seem to be present, particularly at lower birthweights. However, in the most common range for birthweights, the residuals appear to be evenly spread around zero, indicating no violation of error assumptions in those ranges.
 
 ### Comparing model
 
@@ -323,14 +358,12 @@ threeint_mod <- lm(bwt ~ bhead + blength + babysex + bhead:blength + babysex:ble
 cv_bweight <- crossv_mc(birthweight_data, 100)
 
 cv_bweight <- cv_bweight %>% 
-  mutate(my_mod = map(train, ~lm(bwt ~ bhead + delwt + gaweeks + menarche + mheight + mrace + parity + smoken + wtgain, data = .x)), 
+  mutate(my_mod = map(train, ~lm(bwt ~ bhead + delwt + gaweeks + mheight + mrace + smoken + wtgain, data = .x)), 
          twopred_mod = map(train, ~lm(bwt ~ blength + gaweeks, data = .x)), 
          threeint_mod = map(train, ~lm(bwt ~ bhead + blength + babysex + bhead:blength + babysex:blength + babysex:bhead, data = .x))) %>% 
   mutate(rmse_my = map2_dbl(my_mod, test, ~rmse(model = .x, data = .y)),
          rmse_twopred = map2_dbl(twopred_mod, test, ~rmse(model = .x, data = .y)),
          rmse_threeint = map2_dbl(threeint_mod, test, ~rmse(model = .x, data = .y)))
-## Warning in predict.lm(model, data): prediction from a rank-deficient fit
-## may be misleading
 
 cv_bweight %>% 
   select(starts_with("rmse")) %>% 
@@ -344,6 +377,8 @@ cv_bweight %>%
        y = "RMSE")
 ```
 
-<img src="homework6_files/figure-markdown_github/unnamed-chunk-12-1.png" width="90%" />
+<img src="homework6_files/figure-markdown_github/unnamed-chunk-13-1.png" width="90%" />
 
 The model with three interactions has a lower RMSE. If the goal is to make predictions, I would choose the model that is based on the interactions between the baby's sex, head circumfrence, and length to predict birthweight. However, if the goal is to explore other, non-obvious factors of birthweight, such as mother's race, weight gain during pregnancy, history of smoking, and other factors that might be relevant from clinical guidance and equity of care standpoints, I would work to further optimize my model, perhaps including more interaction factors.
+
+If prediction is my main goal, I made some missteps. In particular, I eliminated the baby's sex as a predictor variable very early on in model building using the stepwise method, but that could be because I failed to consider the interaction of the baby's sex with length and head circumfrence. What seems even more likely is that instead of eliminating baby length as a variable due to high correlation in an effort to avoid multicollinearity, I should have included the interaction between baby's head circumfrence and baby length in order to maximize predictive value.

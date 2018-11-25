@@ -212,24 +212,34 @@ birthweight_data %>%
 
 Compared to the reference category of the mother's race being white, the mother's race being asian has an insignificant effect on birthweight. This is a possible candidate for grouping white and asian mothers together, but since the mother's race being black has a very significant effect on the birthweight, I will keep mrace in the model.
 
-The effects `menarche` and `parity` are above the 5% significance level, but since the model is for exploratory and descriptive purposes, I will examine the model diagnostics before eliminating them.
-
+The effects `menarche` and `parity` are above the 5% significance level.  Since the model is for exploratory and descriptive purposes, I will run a partial F-test to see  will examine the model diagnostics before eliminating them.
 
 ```{r}
-generous_model <-  lm(bwt ~ bhead + delwt + gaweeks + menarche + mheight + mrace + parity + smoken + wtgain, data = birthweight_data)
-
 birthweight_data %>% 
-  add_predictions(generous_model) %>% 
-  add_residuals(generous_model) %>% 
+  lm(bwt ~ bhead + delwt + gaweeks + mheight + mrace + smoken + wtgain, data = .) %>% 
+  tidy() %>% 
+  arrange(p.value)
+
+generous_model <-  lm(bwt ~ bhead + delwt + gaweeks + menarche + mheight + mrace + parity + smoken + wtgain, data = birthweight_data)
+lessgen_model <-  lm(bwt ~ bhead + delwt + gaweeks + mheight + mrace + smoken + parity + wtgain, data = birthweight_data)
+anova(lessgen_model, generous_model)
+```
+
+We failed to reject the null hypothesis that the less generous model, without `menarche` and `parity` is preferred, so I'll proceed with that model.
+
+```{r}
+birthweight_data %>% 
+  add_predictions(lessgen_model) %>% 
+  add_residuals(lessgen_model) %>% 
   ggplot(aes(x = pred, y = resid)) + 
   geom_point() + 
   geom_smooth(se = FALSE) + 
-  labs(title = "Predicted values vs. residuals plot for combination model", 
+  labs(title = "Predicted values vs. residuals plot for chosen model", 
        x = "Predicted value", 
        y = "Residual")
 ```
 
-The model poorly predicts outcomes at low birthweights, under 2000 grams. Influential points seem to be present, particularly at lower birthweights. However, in the most common range for birthweights, the residuals appear to be evenly spread around zero, indicating np violation of error assumptions in those ranges.
+The model poorly predicts outcomes at low birthweights, under 2000 grams. Influential points seem to be present, particularly at lower birthweights. However, in the most common range for birthweights, the residuals appear to be evenly spread around zero, indicating no violation of error assumptions in those ranges.
 
 ### Comparing model
 
@@ -248,7 +258,7 @@ threeint_mod <- lm(bwt ~ bhead + blength + babysex + bhead:blength + babysex:ble
 cv_bweight <- crossv_mc(birthweight_data, 100)
 
 cv_bweight <- cv_bweight %>% 
-  mutate(my_mod = map(train, ~lm(bwt ~ bhead + delwt + gaweeks + menarche + mheight + mrace + parity + smoken + wtgain, data = .x)), 
+  mutate(my_mod = map(train, ~lm(bwt ~ bhead + delwt + gaweeks + mheight + mrace + smoken + wtgain, data = .x)), 
          twopred_mod = map(train, ~lm(bwt ~ blength + gaweeks, data = .x)), 
          threeint_mod = map(train, ~lm(bwt ~ bhead + blength + babysex + bhead:blength + babysex:blength + babysex:bhead, data = .x))) %>% 
   mutate(rmse_my = map2_dbl(my_mod, test, ~rmse(model = .x, data = .y)),
@@ -270,4 +280,6 @@ cv_bweight %>%
 ```
 
 The model with three interactions has a lower RMSE. If the goal is to make predictions, I would choose the model that is based on the interactions between the baby's sex, head circumfrence, and length to predict birthweight. However, if the goal is to explore other, non-obvious factors of birthweight, such as mother's race, weight gain during pregnancy, history of smoking, and other factors that might be relevant from clinical guidance and equity of care standpoints, I would work to further optimize my model, perhaps including more interaction factors. 
+
+If prediction is my main goal, I made some missteps. In particular, I eliminated the baby's sex as a predictor variable very early on in model building using the stepwise method, but that could be because I failed to consider the interaction of the baby's sex with length and head circumfrence. What seems even more likely is that instead of eliminating baby length as a variable due to high correlation in an effort to avoid multicollinearity, I should have included the interaction between baby's head circumfrence and baby length in order to maximize predictive value.
 
