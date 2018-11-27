@@ -45,7 +45,22 @@ homicide_data <-
 ##   disposition = col_character()
 ## )
 ## Warning: NAs introduced by coercion
+
+#Missing values
+homicide_data %>% 
+  select_if(function(x) any(is.na(x))) %>% 
+  summarise_each(funs(sum(is.na(.)))) %>% 
+  knitr::kable()
+## `summarise_each()` is deprecated.
+## Use `summarise_all()`, `summarise_at()` or `summarise_if()` instead.
+## To map `funs` over all variables, use `summarise_all()`
 ```
+
+|  victim\_race|  victim\_age|  lat|  lon|
+|-------------:|------------:|----:|----:|
+|           685|          515|   60|   60|
+
+There are `homicide_data %>% distinct(city_state) %>% nrow` cities in our dataset, and `nrow(homicide_data)` cases. There is some missing data: `round(100*685/48507, 2)`% of cases have the victim's race missing, `round(100*515/48507, 2)`% have the victim's age missing, and \``round(60*685/48507, 2)`% have geographical data missing.
 
 I'll look more closely into Baltimore to investigate the effects of victim age, sex, and race on whether a murder is resolved or not resolved. I'll use the `glm` function to obtain the estimate for the adjusted odds ratio for the victim race predictor (comparing non-white victims against white victims) and the associated confidence interval, keeping victim sex and race constant.
 
@@ -105,18 +120,12 @@ glm_homicide_data %>%
 
 <img src="homework6_files/figure-markdown_github/plot-1.png" width="90%" />
 
-All but three cities in our dataset have a point estimate of decreased odds of solving homicides if the victim is nonwhite.
+All but three cities in our dataset have a point estimate of decreased odds of solving homicides if the victim is nonwhite. Nineteen out of 47 cities include an equal odds ratio in their 95% confidence intervals; in other words, for nearly 60% of major U.S. cities analyzed, we can state with 95% confidence that you have decreased odds of having your case resolved if you're a victim who's not white -- even if your sex and age are similar to a white victim. What's driving this lack of parity could be factors other than race-based discrimination, but the data do show an inequity on face.
 
 Problem 2
 ---------
 
-In this probelm, you will analyze data gathered to understand the effects of several variables on a child’s birthweight. This dataset, available here, consists of roughly 4000 children and includes the following variables:
-
-babysex: baby’s sex (male = 1, female = 2) bhead: baby’s head circumference at birth (centimeters) \*\* exclude? blength: baby’s length at birth (centimeteres) \*\* exclude? bwt: baby’s birth weight (grams) **outcome delwt: mother’s weight at delivery (pounds) fincome: family monthly income (in hundreds, rounded) ** frace: father’s race (1= White, 2 = Black, 3 = Asian, 4 = Puerto Rican, 8 = Other, 9 = Unknown) ** gaweeks: gestational age in weeks ** malform: presence of malformations that could affect weight (0 = absent, 1 = present) ** menarche: mother’s age at menarche (years) mheigth: mother’s height (inches) momage: mother’s age at delivery (years) ** mrace: mother’s race (1= White, 2 = Black, 3 = Asian, 4 = Puerto Rican, 8 = Other) parity: number of live births prior to this pregnancy ** pnumlbw: previous number of low birth weight babies ** pnumgsa: number of prior small for gestational age babies ** ppbmi: mother’s pre-pregnancy BMI ** ppwt: mother’s pre-pregnancy weight (pounds) smoken: average number of cigarettes smoked per day during pregnancy ** wtgain: mother’s weight gain during pregnancy (pounds) **
-
-Load and clean the data for regression analysis (i.e. convert numeric to factor where appropriate, check for missing data, etc.).
-
-Propose a regression model for birthweight. This model may be based on a hypothesized structure for the factors that underly birthweight, on a data-driven model-building process, or a combination of the two. Describe your modeling process and show a plot of model residuals against fitted values – use add\_predictions and add\_residuals in making this plot.
+This problem deals with a dataset containing live birth data in order to examine effects of different variables on a baby's birthweight.
 
 ``` r
 birthweight_data <- read_csv("./data/birthweight.csv") %>% 
@@ -133,7 +142,19 @@ birthweight_data <- read_csv("./data/birthweight.csv") %>%
 ##   smoken = col_double()
 ## )
 ## See spec(...) for full column specifications.
+
+birthweight_data %>% 
+  select_if(function(x) any(is.na(x))) %>% 
+  summarise_each(funs(sum(is.na(.)))) %>% 
+  knitr::kable()
+## `summarise_each()` is deprecated.
+## Use `summarise_all()`, `summarise_at()` or `summarise_if()` instead.
+## To map `funs` over all variables, use `summarise_all()`
 ```
+
+There are `nrow(birthweight_data)` births, and no missing values in our data.
+
+### Model-building.
 
 My model-building approach will be step-wise backward elimination: the maximum number of variables will be included at the outset, and the least significant variables will be iteratively eliminated. Since the goal is exploratory, to understand the effects of several variables on birthweight, I chose a method that will allow for a generous/inclusive set of variables.
 
@@ -349,11 +370,11 @@ The model poorly predicts outcomes at low birthweights, under 2000 grams. Influe
 
 ### Comparing model
 
-Compare your model to two others:
+Now, I'll compare my model to two others, using the cross-validated (created with `modelr::crossv_mc`) prediction error as measured by RMSE:
 
-One using length at birth and gestational age as predictors (main effects only) One using head circumference, length, sex, and all interactions (including the three-way interaction) between these Make this comparison in terms of the cross-validated prediction error; use crossv\_mc and functions in purrr as appropriate.
+-   One using length at birth and gestational age as predictors (main effects only)
 
-Note that although we expect your model to be reasonable, model building itself is not a main idea of the course and we don’t necessarily expect your model to be “optimal”.
+-   One using head circumference, length, sex, and all interactions (including the three-way interaction) between these
 
 ``` r
 twopred_mod <- lm(bwt ~ blength + gaweeks, data = birthweight_data)
