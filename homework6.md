@@ -60,7 +60,7 @@ homicide_data %>%
 |-------------:|------------:|----:|----:|
 |           685|          515|   60|   60|
 
-There are `homicide_data %>% distinct(city_state) %>% nrow` cities in our dataset, and `nrow(homicide_data)` cases. There is some missing data: `round(100*685/48507, 2)`% of cases have the victim's race missing, `round(100*515/48507, 2)`% have the victim's age missing, and \``round(60*685/48507, 2)`% have geographical data missing.
+There are 47 cities in our dataset, and 48507 cases. There is some missing data: 1.41% of cases have the victim's race missing, 1.06% have the victim's age missing, and 0.85% have geographical data missing.
 
 I'll look more closely into Baltimore to investigate the effects of victim age, sex, and race on whether a murder is resolved or not resolved. I'll use the `glm` function to obtain the estimate for the adjusted odds ratio for the victim race predictor (comparing non-white victims against white victims) and the associated confidence interval, keeping victim sex and race constant.
 
@@ -152,7 +152,7 @@ birthweight_data %>%
 ## To map `funs` over all variables, use `summarise_all()`
 ```
 
-There are `nrow(birthweight_data)` births, and no missing values in our data.
+There are 4342 births, and no missing values in our data.
 
 ### Model-building.
 
