@@ -47,11 +47,7 @@ homicide_data <-
 ## Warning: NAs introduced by coercion
 ```
 
-I'll look more closely into Baltimore
-
-Create a city\_state variable (e.g. “Baltimore, MD”), and a binary variable indicating whether the homicide is solved. Omit cities Dallas, TX; Phoenix, AZ; and Kansas City, MO – these don’t report victim race. Also omit Tulsa, AL – this is a data entry mistake. Modifiy victim\_race to have categories white and non-white, with white as the reference category. Be sure that victim\_age is numeric. check
-
-For the city of Baltimore, MD, use the glm function to fit a logistic regression with resolved vs unresolved as the outcome and victim age, sex and race (as just defined) as predictors. Save the output of glm as an R object; apply the broom::tidy to this object; and obtain the estimate and confidence interval of the adjusted odds ratio for solving homicides comparing non-white victims to white victims keeping all other variables fixed.
+I'll look more closely into Baltimore to investigate the effects of victim age, sex, and race on whether a murder is resolved or not resolved. I'll use the `glm` function to obtain the estimate for the adjusted odds ratio for the victim race predictor (comparing non-white victims against white victims) and the associated confidence interval, keeping victim sex and race constant.
 
 ``` r
 glm_baltimore <- 
@@ -71,7 +67,9 @@ broom::tidy(glm_baltimore, conf.int = TRUE, exponentiate = TRUE) %>%
 |:----------------------|-----------:|---------:|----------:|
 | victim\_racenon-white |       0.435|     0.308|      0.611|
 
-Now run glm for each of the cities in your dataset, and extract the adjusted odds ratio (and CI) for solving homicides comparing non-white victims to white victims. Do this within a “tidy” pipeline, making use of purrr::map, list columns, and unnest as necessary to create a dataframe with estimated ORs and CIs for each city.
+We are 95% confident that non-white victims in Baltimore have between 0.31 - 0.61 times the odds of having their murder resolved, compared to white victims of a similar sex and age.
+
+I'll reproduce this analysis for each of the cities in the dataset.
 
 ``` r
 glm_homicides = function(df) {
@@ -91,7 +89,9 @@ glm_homicide_data <- homicide_data %>%
           or_lower = exp(estimate - 1.96*std.error),
           or_upper = exp(estimate + 1.96*std.error), 
           city_state = fct_reorder(city_state, estimate))
+```
 
+``` r
 glm_homicide_data %>% 
   ggplot(aes(x = city_state, y = odds_ratio)) + 
   geom_point() + 
@@ -103,9 +103,9 @@ glm_homicide_data %>%
        caption = "Data from Washington Post. Victim sex and age held constant.")
 ```
 
-<img src="homework6_files/figure-markdown_github/unnamed-chunk-3-1.png" width="90%" />
+<img src="homework6_files/figure-markdown_github/plot-1.png" width="90%" />
 
-Create a plot that shows the estimated ORs and CIs for each city. Organize cities according to estimated OR, and comment on the plot.
+All but three cities in our dataset have a point estimate of decreased odds of solving homicides if the victim is nonwhite.
 
 Problem 2
 ---------
@@ -163,7 +163,11 @@ birthweight_data %>%
 | smoken   |  -0.08|  -0.05|    -0.07|   0.05|     0.08|     0.04|      0.02|     0.06|    0.08|   -0.01|   0.01|   0.04|    1.00|    0.03|
 | wtgain   |   0.25|   0.18|     0.19|   0.42|    -0.02|     0.15|     -0.04|     0.05|   -0.09|    0.01|  -0.11|  -0.07|    0.03|    1.00|
 
-For continuous variables, there is high predictor correlation, providing evidence of multicollinearity, between: \* bhead and blength; \* ppwt and delwt and ppbmi
+For continuous variables, there is high predictor correlation, providing evidence of multicollinearity, between:
+
+-   bhead and blength;
+
+-   ppwt and delwt and ppbmi
 
 Of the first, I'll keep `bhead` (baby's head circumfrence) because of its higher correlation with the outcome, baby weight. Of the second, I'll keep `delwt` because of its comparative higher correlation with baby weight as well.
 
